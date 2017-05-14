@@ -90,9 +90,13 @@ class botInstance:
             message = "L'émetteur a été notifié! Vous gagnez *+3 points* de karma! (solde de karma: 19)"
             self.slack.chat.post_message(channel, message)
 
+            self.conv_state[channel] = 0
+
         elif response.startswith('n'):
             message = "Très bien, bonne journée! :water_melon:"
             self.slack.chat.post_message(channel, message)
+
+            self.conv_state[channel] = 0
 
         else:
             message = "Je n'ai pas compris votre réponse"
