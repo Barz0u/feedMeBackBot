@@ -70,50 +70,16 @@ class botInstance:
         text = "Le message a bien été envoyé. :pray:"
         self.slack.chat.post_message(channel, text)
 
-        self.conv_state[channel] = 3
-
-    def get_thanks_choice(self, channel, user, text):
-        split = text.split()
-        choice = split[0]
-
-        if choice.startswith('o'):
-            text = "Remerciement envoyé! :ok_hand:\nVotre karma augmente de *3 points!* (solde karma: 15)"
-        elif choice.startswith('n'):
-            text = "Bien reçu!"
-        else:
-            text = "Je n'ai pas compris votre réponse.\nVoulez-vous remerciez l'émetteur? (oui/non)"
-
-        resp = self.slack.im.open(self.feedback_target[user])
-        chan = resp.body.get("channel").get("id")
-
-        positive_feedback = "Vous avez reçu un feedback:\n" + text
-
-        self.slack.chat.post_message(chan, positive_feedback)
-        text = "Le message a bien été envoyé. :pray:"
-        self.slack.chat.post_message(channel, text)
-
-        self.conv_state[channel] = 3
+        # Reset
+        self.conv_state[channel] = 0
 
     def message_im(self, event_data):
         message = event_data["event"]
         channel = message["channel"]
         text = message["text"]
-
-
-        # If the message comes from the bot itself, or another bot
-        if message.get("subtype") == "bot_message":
-            if text == self.remerciements:
-                print("mode remerciements")
-                self.conv_state[channel] = 10
-                return
-            else:
-                print("bot message, skip.")
-                return
-        else:
-            user = message["user"]
+        user = message["user"]
 
         if channel not in self.conv_state:
-            print("Premiere conversation, creation de l'user dans la map")
             self.conv_state[channel] = 0
 
         # Different behavior depending on the conversation state
@@ -123,7 +89,5 @@ class botInstance:
             self.get_username_from_message(channel, user, text)
         elif self.conv_state[channel] == 2:
             self.get_feedback_from_message(channel, user, text)
-        elif self.conv_state[channel] == 10:
-            self.get_thanks_choice(channel, user, text)
         else:
             print("fail")

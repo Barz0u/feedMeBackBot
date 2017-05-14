@@ -10,13 +10,12 @@ botInstances = {}
 @slack_events_adapter.on("message")
 def message(event_data):
     event = event_data["event"]
-    print("event received: " + str(event))
+    #print("event received: " + str(event))
 
     if event.get("subtype") == "bot_message":
-        user = "bot"
+        return
 
-    else:
-        user = event['user']
+    user = event['user']
 
     if user not in botInstances:
         print("Premiere conversation, creation de l'user et de son instance du bot")
