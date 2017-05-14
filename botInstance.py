@@ -9,6 +9,10 @@ import sys;
 reload(sys);
 sys.setdefaultencoding("utf8")
 
+# Linked channels so the bot can call back
+linked_channels={}
+
+
 class botInstance:
 
     remerciements = "Voulez-vous remerciez l'émetteur? (oui/non)"
@@ -62,6 +66,9 @@ class botInstance:
         resp = self.slack.im.open(self.feedback_target[user])
         chan = resp.body.get("channel").get("id")
 
+        # Prepare callback
+        linked_channels[chan] = channel
+
         positive_feedback = "Vous avez reçu un feedback:\n" + text
 
         self.slack.chat.post_message(chan, positive_feedback)
@@ -73,10 +80,38 @@ class botInstance:
         # Reset
         self.conv_state[channel] = 0
 
+    def get_thanks_response(self, channel, user, text):
+        split = text.split()
+        response = split[0]
+
+        if response.startswith('o'):
+            message = "Votre commentaire a été apprécié! *+3 points* de karma! (solde de karma: 13)"
+            self.slack.chat.post_message(linked_channels[channel], message)
+            message = "L'émetteur a été notifié! Vous gagnez *+3 points* de karma! (solde de karma: 19)"
+            self.slack.chat.post_message(channel, message)
+
+        elif response.startswith('n'):
+            message = "Très bien, bonne journée! :water_melon:"
+            self.slack.chat.post_message(channel, message)
+
+        else:
+            message = "Je n'ai pas compris votre réponse"
+            self.slack.chat.post_message(channel, message)
+            self.slack.chat.post_message(channel, self.remerciements)
+
     def message_im(self, event_data):
         message = event_data["event"]
-        channel = message["channel"]
         text = message["text"]
+        channel = message["channel"]
+
+        if message.get("subtype") == "bot_message":
+            if text == self.remerciements:
+                print("MODE MERCI")
+                self.conv_state[channel] = 10
+                return
+            else:
+                return
+
         user = message["user"]
 
         if channel not in self.conv_state:
@@ -89,5 +124,7 @@ class botInstance:
             self.get_username_from_message(channel, user, text)
         elif self.conv_state[channel] == 2:
             self.get_feedback_from_message(channel, user, text)
+        elif self.conv_state[channel] == 10:
+            self.get_thanks_response(channel, user, text)
         else:
             print("fail")
