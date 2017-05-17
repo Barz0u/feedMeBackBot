@@ -9,7 +9,8 @@ setup(
     author='Basile Douillet',
     author_email='basiledouillet@gmail.com',
     url='https://github.com/Barz0u/feedMeBackBot',
-    install_requires=['slacker >= 0.9.42'],
+    install_requires=['slacker >= 0.9.42',
+                     'slackeventsapi'],
     license='http://www.apache.org/licenses/LICENSE-2.0',
     test_suite='tests',
     classifiers=[
