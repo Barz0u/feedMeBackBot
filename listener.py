@@ -1,11 +1,12 @@
-import os
 from slackeventsapi import SlackEventAdapter
-import botInstance as Instance
+import BotInstance as Instance
 
-SLACK_VERIFICATION_TOKEN = os.environ["SLACK_VERIFICATION_TOKEN"]
-slack_events_adapter = SlackEventAdapter(SLACK_VERIFICATION_TOKEN, endpoint="/slack_events")
 
 botInstances = {}
+slack_bot_token = input("Please enter your SLACK_BOT_TOKEN: ")
+slack_verification_token = input("Please enter your SLACK_VERIFICATION_TOKEN: ")
+
+slack_events_adapter = SlackEventAdapter(slack_verification_token, endpoint="/slack_events")
 
 @slack_events_adapter.on("message")
 def message(event_data):
@@ -13,14 +14,12 @@ def message(event_data):
     #print("event received: " + str(event))
     print("channel: " + event["channel"])
 
-    #if event.get("subtype") == "bot_message":
-    #    return
 
     channel = event['channel']
 
     if channel not in botInstances:
         print("Premiere conversation, creation de l'user et de son instance du bot")
-        botInstances[channel] = Instance.botInstance()
+        botInstances[channel] = Instance.BotInstance(slack_bot_token)
 
     # Call the bot instance function for the message
     print("event received from channel " + str(channel) + " using his own instance: " + str(botInstances[channel]))

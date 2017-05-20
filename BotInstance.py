@@ -1,44 +1,37 @@
 # -*- coding: utf-8 -*-
-
-import os
-from slackclient import SlackClient
-from slackeventsapi import SlackEventAdapter
 from slacker import Slacker
+# import sys
 
-import sys;
-reload(sys);
-sys.setdefaultencoding("utf8")
+# reload(sys);
+# sys.setdefaultencoding("utf8")
 
 # Linked channels so the bot can call back
-linked_channels={}
+linkedChannels = {}
 
 
-class botInstance:
+class BotInstance:
 
     remerciements = "Voulez-vous remerciez l'émetteur? (oui/non)"
 
-    def __init__(self):
-        self.bot_token = os.environ.get('SLACK_BOT_TOKEN')
-        self.slack_client = SlackClient(self.bot_token)
-        self.slack = Slacker(self.bot_token)
+    def __init__(self, slack_bot_token):
 
-        self.SLACK_VERIFICATION_TOKEN = os.environ["SLACK_VERIFICATION_TOKEN"]
-        self.slack_events_adapter = SlackEventAdapter(self.SLACK_VERIFICATION_TOKEN, endpoint="/slack_events")
+        self.slack = Slacker(slack_bot_token)
 
         self.conv_state = {}
         self.feedback_target = {}
 
-    def ask_who_to_notify(self, channel, user, text):
-        message = "Je suis le service de commentaire positif! :watermelon:\nQuelle est la personne que vous souhaitez notifier?"
+    def ask_who_to_notify(self, channel):
+        message = 'Je suis le service de commentaire positif! :watermelon:\nQuelle est la personne que vous '\
+                'souhaitez notifier? '
         self.slack.chat.post_message(channel, message)
 
         # Change state of the conversation
-        self.conv_state[channel] = 1;
+        self.conv_state[channel] = 1
 
-    def first_contact(self, channel, user, text):
+    def first_contact(self, channel, user):
         message = "Bonjour <@%s>! :tada:" % user
         self.slack.chat.post_message(channel, message)
-        botInstance.ask_who_to_notify(self, channel, user, text)
+        BotInstance.ask_who_to_notify(self, channel)
 
     def get_username_from_message(self, channel, user, text):
         split = text.split()
@@ -62,12 +55,11 @@ class botInstance:
         self.feedback_target[user] = given_user
 
     def get_feedback_from_message(self, channel, user, text):
-        chan = "@" + self.feedback_target[user]
         resp = self.slack.im.open(self.feedback_target[user])
         chan = resp.body.get("channel").get("id")
 
         # Prepare callback
-        linked_channels[chan] = channel
+        linkedChannels[chan] = channel
 
         positive_feedback = "Vous avez reçu un feedback:\n" + text
 
@@ -80,19 +72,19 @@ class botInstance:
         # Reset
         self.conv_state[channel] = 0
 
-    def get_thanks_response(self, channel, user, text):
+    def get_thanks_response(self, channel, text):
         split = text.split()
-        response = split[0]
+        user_response = split[0]
 
-        if response.startswith('o'):
+        if user_response.startswith('o'):
             message = "Votre commentaire a été apprécié! *+3 points* de karma! (solde de karma: 13)"
-            self.slack.chat.post_message(linked_channels[channel], message)
+            self.slack.chat.post_message(linkedChannels[channel], message)
             message = "L'émetteur a été notifié! Vous gagnez *+3 points* de karma! (solde de karma: 19)"
             self.slack.chat.post_message(channel, message)
 
             self.conv_state[channel] = 0
 
-        elif response.startswith('n'):
+        elif user_response.startswith('n'):
             message = "Très bien, bonne journée! :water_melon:"
             self.slack.chat.post_message(channel, message)
 
@@ -123,12 +115,12 @@ class botInstance:
 
         # Different behavior depending on the conversation state
         if self.conv_state[channel] == 0:
-            self.first_contact(channel, user, text)
+            self.first_contact(channel, user)
         elif self.conv_state[channel] == 1:
             self.get_username_from_message(channel, user, text)
         elif self.conv_state[channel] == 2:
             self.get_feedback_from_message(channel, user, text)
         elif self.conv_state[channel] == 10:
-            self.get_thanks_response(channel, user, text)
+            self.get_thanks_response(channel, text)
         else:
             print("fail")
